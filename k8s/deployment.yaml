@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mern-auth-app
+  namespace: mern-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mern-auth-app
+  template:
+    metadata:
+      labels:
+        app: mern-auth-app
+    spec:
+      containers:
+      - name: mern-auth-app
+        image: ${DOCKER_USERNAME}/mern-auth-app:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        env:
+        - name: MONGO_URI
+          valueFrom:
+            configMapKeyRef:
+              name: mern-app-config
+              key: MONGO_URI
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: mern-app-config
+              key: NODE_ENV
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: mern-app-config
+              key: PORT
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: mern-app-secrets
+              key: JWT_SECRET
