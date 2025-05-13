@@ -1,0 +1,82 @@
+name: Kubernetes Deployment Status
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'k8s/**'
+      - '.github/workflows/k8s-deployment-status.yml'
+
+jobs:
+  capture-deployment-status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Minikube
+        run: |
+          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          sudo install minikube-linux-amd64 /usr/local/bin/minikube
+          minikube start --driver=docker
+
+      - name: Create Screenshot Directories
+        run: |
+          mkdir -p documentation/screenshots/{deployment-process,verification,application-logs}
+
+      - name: Deploy Namespace and Capture Status
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl get namespaces > documentation/screenshots/deployment-process/namespace-creation.txt
+
+      - name: Deploy ConfigMap and Capture Status
+        run: |
+          kubectl apply -f k8s/configmap.yaml
+          kubectl get configmaps -n mern-app > documentation/screenshots/deployment-process/configmap-deployment.txt
+
+      - name: Deploy Secrets and Capture Status
+        run: |
+          kubectl apply -f k8s/secrets.yaml
+          kubectl get secrets -n mern-app > documentation/screenshots/deployment-process/secrets-deployment.txt
+
+      - name: Deploy MongoDB and Capture Status
+        run: |
+          kubectl apply -f k8s/mongodb-deployment.yaml
+          kubectl apply -f k8s/mongodb-service.yaml
+          kubectl get deployments,pods,svc -n mern-app -l app=mongodb > documentation/screenshots/deployment-process/mongodb-deployment.txt
+
+      - name: Deploy Application and Capture Status
+        run: |
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
+          kubectl get deployments,pods,svc -n mern-app -l app=mern-auth-app > documentation/screenshots/deployment-process/app-deployment.txt
+
+      - name: Capture Verification Status
+        run: |
+          echo "Pod Status:" > documentation/screenshots/verification/pods-status.txt
+          kubectl get pods -n mern-app -o wide >> documentation/screenshots/verification/pods-status.txt
+          
+          echo "Service Status:" > documentation/screenshots/verification/services-status.txt
+          kubectl get services -n mern-app -o wide >> documentation/screenshots/verification/services-status.txt
+          
+          echo "Deployment Status:" > documentation/screenshots/verification/deployments-status.txt
+          kubectl get deployments -n mern-app -o wide >> documentation/screenshots/verification/deployments-status.txt
+          
+          echo "Application URL:" > documentation/screenshots/verification/app-url.txt
+          minikube service mern-auth-service -n mern-app --url >> documentation/screenshots/verification/app-url.txt
+
+      - name: Capture Application Logs
+        run: |
+          echo "MongoDB Logs:" > documentation/screenshots/application-logs/mongodb-logs.txt
+          kubectl logs -l app=mongodb -n mern-app --tail=100 >> documentation/screenshots/application-logs/mongodb-logs.txt
+          
+          echo "Application Logs:" > documentation/screenshots/application-logs/app-logs.txt
+          kubectl logs -l app=mern-auth-app -n mern-app --tail=100 >> documentation/screenshots/application-logs/app-logs.txt
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name 'GitHub Actions Bot'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add documentation/screenshots
+          git commit -m "Update deployment status screenshots [skip ci]" || echo "No changes to commit"
+          git push
