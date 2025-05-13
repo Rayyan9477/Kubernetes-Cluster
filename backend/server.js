@@ -1,6 +1,7 @@
 import path from 'path';
 import express from 'express';
 import dotenv from 'dotenv';
+import cors from 'cors';
 dotenv.config();
 import connectDB from './config/db.js';
 import cookieParser from 'cookie-parser';
@@ -13,12 +14,20 @@ connectDB();
 
 const app = express();
 
+// CORS configuration
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:30007',
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(cookieParser());
 
 app.use('/api/users', userRoutes);
+
+app.use('/api/health', healthRoutes);
 
 if (process.env.NODE_ENV === 'production') {
   const __dirname = path.resolve();

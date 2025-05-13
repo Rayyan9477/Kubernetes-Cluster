@@ -5,11 +5,13 @@ import {
   logoutUser,
   getUserProfile,
   updateUserProfile,
+  healthCheck
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
+router.get('/health', healthCheck);
 router.post('/', registerUser);
 router.post('/auth', authUser);
 router.post('/logout', logoutUser);
