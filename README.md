@@ -9,6 +9,17 @@ This project demonstrates how to set up a Kubernetes cluster using Minikube and 
 - **Minikube**: v1.35.0
 - **Kubectl**: v1.32.3
 
+## Project Overview
+
+This project implements a full-stack MERN application with authentication capabilities, deployed on a local Kubernetes cluster using Minikube. Key features include:
+
+1. **Kubernetes Deployment** - Deploy a containerized application to a local Kubernetes cluster
+2. **CI/CD with GitHub Actions** - Automate the build and deployment process
+3. **MongoDB Database** - Using a containerized MongoDB instance
+4. **Authentication System** - Complete user registration and login functionality
+5. **RESTful API** - Well-structured backend API
+6. **React Frontend** - Modern, responsive user interface
+
 ## Prerequisites
 
 1. Docker installed and running
@@ -29,19 +40,24 @@ cd Kubernetes-Cluster
 
 ### Step 2: Set Up Environment Variables
 
-Create a `.env` file in the repository root:
+Create a `.env` file in the repository root based on the provided `.env.example`:
 
-```env
-DOCKER_USERNAME=your-dockerhub-username
-DOCKER_PASSWORD=your-dockerhub-password
-JWT_SECRET=your-jwt-secret
+```bash
+cp .env.example .env
 ```
+
+Then edit the `.env` file to add your specific configuration values.
+
+For detailed environment configuration information, see [Environment Configuration](./documentation/ENVIRONMENT.md).
 
 Add these secrets to your GitHub repository:
 1. Go to Settings > Secrets and Variables > Actions
 2. Add the following secrets:
    - `DOCKER_USERNAME`
    - `DOCKER_PASSWORD`
+   - `JWT_SECRET`
+   - `MONGODB_USERNAME`
+   - `MONGODB_PASSWORD`
 
 ### Step 3: Local Development
 
@@ -98,7 +114,22 @@ The script will:
 
 1. Get the application URL:
 ```bash
-minikube service mern-auth-app-service -n mern-app --url
+minikube service mern-auth-service -n mern-app --url
+```
+
+### Step 6: CI/CD with GitHub Actions
+
+1. Set up a self-hosted runner on your machine:
+   - Go to your GitHub repository
+   - Navigate to Settings > Actions > Runners
+   - Click "New self-hosted runner" and follow the instructions
+
+2. Push changes to GitHub to trigger automated deployment:
+```bash
+git add .
+git commit -m "Update application"
+git push origin main
+```
 ```
 
 2. Open the URL in your browser to access the application.

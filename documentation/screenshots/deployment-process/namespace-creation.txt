@@ -1,0 +1,6 @@
+NAME              STATUS   AGE
+default           Active   18h
+kube-node-lease   Active   18h
+kube-public       Active   18h
+kube-system       Active   18h
+mern-app          Active   18h

@@ -1,0 +1,4 @@
+NAME                                 READY   STATUS             RESTARTS      AGE
+pod/mern-auth-app-5c8dfc47df-4ldpb   0/1     ErrImagePull       0             18h
+pod/mern-auth-app-846f9747cf-8s6xw   0/1     InvalidImageName   0             18h
+pod/mern-auth-app-ccf869c4b-jkqtc    0/1     Running            11 (3s ago)   18h

@@ -1,0 +1,3 @@
+NAME               DATA   AGE
+kube-root-ca.crt   1      18h
+mern-app-config    4      18h

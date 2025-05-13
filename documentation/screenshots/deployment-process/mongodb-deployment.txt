@@ -1,0 +1,2 @@
+NAME                           READY   STATUS    RESTARTS       AGE
+pod/mongodb-86c5795d97-pk774   1/1     Running   2 (3m9s ago)   18h

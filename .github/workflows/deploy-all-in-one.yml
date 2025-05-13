@@ -1,4 +1,4 @@
-name: Build and Deploy to Kubernetes Cluster
+name: Deploy with All-in-One YAML
 
 on:
   push:
@@ -20,7 +20,7 @@ env:
 jobs:
   build-deploy:
     runs-on: self-hosted
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -52,64 +52,31 @@ jobs:
         tags: ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
         cache-from: type=registry,ref=${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:buildcache
         cache-to: type=registry,ref=${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
-        
-    - name: Create namespace if not exists
-      run: |
-        kubectl get namespace ${{ env.K8S_NAMESPACE }} || kubectl apply -f k8s/namespace.yaml
 
-    - name: Create Kubernetes Secrets
+    - name: Deploy All-in-One to Kubernetes
       env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         MONGODB_USERNAME: ${{ secrets.MONGODB_USERNAME }}
         MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
         JWT_SECRET: ${{ secrets.JWT_SECRET }}
       run: |
-        # Create MongoDB connection string
-        MONGO_URI="mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb-service:27017/${{ env.MONGODB_DATABASE }}?authSource=admin"
-        
-        # Create secrets
-        kubectl create secret generic mern-app-secrets \
-          --namespace=${{ env.K8S_NAMESPACE }} \
-          --from-literal=JWT_SECRET="${JWT_SECRET}" \
-          --from-literal=MONGODB_USERNAME="${MONGODB_USERNAME}" \
-          --from-literal=MONGODB_PASSWORD="${MONGODB_PASSWORD}" \
-          --from-literal=MONGO_URI="${MONGO_URI}" \
-          --dry-run=client -o yaml | kubectl apply -f -
-
-    - name: Create ConfigMap
-      run: |
-        cat <<EOF | kubectl apply -f -
-        apiVersion: v1
-        kind: ConfigMap
-        metadata:
-          name: mern-app-config
-          namespace: ${{ env.K8S_NAMESPACE }}
-        data:
-          NODE_ENV: "${{ env.NODE_ENV }}"
-          PORT: "${{ env.PORT }}"
-          FRONTEND_URL: "${{ env.FRONTEND_URL }}"
-          VITE_BACKEND_URL: "${{ env.VITE_BACKEND_URL }}"
-          MONGODB_DATABASE: "${{ env.MONGODB_DATABASE }}"
-        EOF
-
-    - name: Deploy MongoDB
-      run: |
-        kubectl apply -f k8s/mongodb-deployment.yaml
-        kubectl apply -f k8s/mongodb-service.yaml
-
-    - name: Deploy Application
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      run: |
-        # Process deployment template with environment variables
-        cat k8s/deployment.yaml | \
+        # Create a temporary file with substituted variables
+        cat k8s/all-in-one.yaml | \
           sed "s|\${DOCKER_USERNAME}|${DOCKER_USERNAME}|g" | \
           sed "s|\${PORT}|${{ env.PORT }}|g" | \
-          kubectl apply -f -
+          sed "s|\${NODE_ENV}|${{ env.NODE_ENV }}|g" | \
+          sed "s|\${FRONTEND_URL}|${{ env.FRONTEND_URL }}|g" | \
+          sed "s|\${VITE_BACKEND_URL}|${{ env.VITE_BACKEND_URL }}|g" | \
+          sed "s|\${MONGODB_DATABASE}|${{ env.MONGODB_DATABASE }}|g" | \
+          sed "s|\${JWT_SECRET}|${JWT_SECRET}|g" | \
+          sed "s|\${MONGODB_USERNAME}|${MONGODB_USERNAME}|g" | \
+          sed "s|\${MONGODB_PASSWORD}|${MONGODB_PASSWORD}|g" > /tmp/all-in-one-substituted.yaml
         
-        # Apply service
-        cat k8s/service.yaml | \
-          sed "s|\${PORT}|${{ env.PORT }}|g" | \
-          kubectl apply -f -
+        # Apply the substituted file
+        kubectl apply -f /tmp/all-in-one-substituted.yaml
+        
+        # Clean up
+        rm /tmp/all-in-one-substituted.yaml
 
     - name: Wait for deployments to be ready
       run: |
@@ -165,21 +132,3 @@ jobs:
         minikube service mern-auth-service -n ${{ env.K8S_NAMESPACE }} --url >> documentation/verification/deployment-status.txt
         
         echo "Deployment status report generated at documentation/verification/deployment-status.txt"
-
-    - name: Capture screenshots for documentation
-      run: |
-        mkdir -p documentation/screenshots/$(date "+%Y-%m-%d")
-        
-        # Capture deployment status
-        echo "Capturing Kubernetes status info..."
-        kubectl get all -n ${{ env.K8S_NAMESPACE }} > documentation/screenshots/$(date "+%Y-%m-%d")/k8s-resources.txt
-        
-        # Capture application logs
-        echo "Capturing application logs..."
-        kubectl logs -l app=mern-auth-app -n ${{ env.K8S_NAMESPACE }} --tail=100 > documentation/screenshots/$(date "+%Y-%m-%d")/app-logs.txt
-        
-        # Capture MongoDB logs
-        echo "Capturing MongoDB logs..."
-        kubectl logs -l app=mongodb -n ${{ env.K8S_NAMESPACE }} --tail=100 > documentation/screenshots/$(date "+%Y-%m-%d")/mongodb-logs.txt
-        
-        echo "Documentation captured successfully!"

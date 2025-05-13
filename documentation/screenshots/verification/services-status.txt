@@ -1,0 +1,3 @@
+NAME                TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE   SELECTOR
+mern-auth-service   NodePort    10.96.98.7       <none>        80:30007/TCP   18h   app=mern-auth-app
+mongodb-service     ClusterIP   10.101.125.222   <none>        27017/TCP      18h   app=mongodb

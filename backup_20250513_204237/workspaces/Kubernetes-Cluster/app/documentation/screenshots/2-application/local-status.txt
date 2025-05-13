@@ -1,0 +1,4 @@
+\nDocker containers status:
+NAME                           IMAGE                    COMMAND                  SERVICE   CREATED          STATUS          PORTS
+kubernetes-cluster-app-1       kubernetes-cluster-app   "docker-entrypoint.s…"   app       11 seconds ago   Up 10 seconds   0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+kubernetes-cluster-mongodb-1   mongo:4.4                "docker-entrypoint.s…"   mongodb   11 seconds ago   Up 10 seconds   0.0.0.0:27017->27017/tcp, [::]:27017->27017/tcp

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mern-app-config
+  namespace: mern-app
+data:
+  NODE_ENV: "${NODE_ENV}"
+  PORT: "${PORT}"
+  FRONTEND_URL: "${FRONTEND_URL}"
+  VITE_BACKEND_URL: "${VITE_BACKEND_URL}"
+  MONGODB_DATABASE: "${MONGODB_DATABASE}"

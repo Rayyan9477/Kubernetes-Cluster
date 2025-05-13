@@ -1,0 +1,16 @@
+Environment Details
+==================
+
+OS Information:
+Linux codespaces-3f6773 6.8.0-1027-azure #32~22.04.1-Ubuntu SMP Thu Apr  3 20:26:27 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+
+Docker Version:
+Docker version 27.5.1-1, build 9f9e4058019a37304dc6572ffcbb409d529b59d8
+
+Minikube Version:
+minikube version: v1.35.0
+commit: dd5d320e41b5451cdf3c01891bc4e13d189586ed-dirty
+
+Kubectl Version:
+Client Version: v1.32.3
+Kustomize Version: v5.5.0

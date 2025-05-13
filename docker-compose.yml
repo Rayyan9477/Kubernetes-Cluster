@@ -1,26 +1,43 @@
-version: '3'
-
 services:
-  app:
+  frontend:
     build:
-      context: ./app
+      context: ./app/frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_BACKEND_URL=${VITE_BACKEND_URL}
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_BACKEND_URL=${VITE_BACKEND_URL}
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./app/backend
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
-    depends_on:
-      - mongodb
+      - "${PORT}:${PORT}"
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/mern-auth
+      - MONGO_URI=mongodb://admin:password123@mongodb:27017/mern-auth?authSource=admin
       - NODE_ENV=development
       - PORT=5000
       - JWT_SECRET=abc123
+      - FRONTEND_URL=http://localhost:3000
+    depends_on:
+      - mongodb
 
   mongodb:
     image: mongo:4.4
     ports:
       - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password123
+      - MONGO_INITDB_DATABASE=mern-auth
     volumes:
       - mongodb_data:/data/db
+    command: mongod --auth
 
 volumes:
   mongodb_data:

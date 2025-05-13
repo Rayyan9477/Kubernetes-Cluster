@@ -3,7 +3,9 @@ name: Kubernetes Deployment Status
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: 
+      - main
+      - master
     paths:
       - 'k8s/**'
       - '.github/workflows/k8s-deployment-status.yml'
@@ -11,6 +13,12 @@ on:
 jobs:
   capture-deployment-status:
     runs-on: ubuntu-latest
+    env:
+      MONGODB_USERNAME: ${{ secrets.MONGODB_USERNAME }}
+      MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     steps:
       - uses: actions/checkout@v2
 
@@ -18,7 +26,13 @@ jobs:
         run: |
           curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
           sudo install minikube-linux-amd64 /usr/local/bin/minikube
-          minikube start --driver=docker
+          minikube start --driver=docker --memory=2048 --cpus=2
+          minikube status
+          kubectl version --client
+          
+      - name: Configure Docker credentials
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Create Screenshot Directories
         run: |
@@ -31,8 +45,9 @@ jobs:
 
       - name: Deploy ConfigMap and Capture Status
         run: |
-          kubectl apply -f k8s/configmap.yaml
+          envsubst < k8s/configmap.yaml | kubectl apply -f -
           kubectl get configmaps -n mern-app > documentation/screenshots/deployment-process/configmap-deployment.txt
+          kubectl wait --for=condition=Available --timeout=60s configmap/mern-app-config -n mern-app || true
 
       - name: Deploy Secrets and Capture Status
         run: |
@@ -47,9 +62,24 @@ jobs:
 
       - name: Deploy Application and Capture Status
         run: |
-          kubectl apply -f k8s/deployment.yaml
-          kubectl apply -f k8s/service.yaml
+          envsubst < k8s/deployment.yaml | kubectl apply -f -
+          envsubst < k8s/service.yaml | kubectl apply -f -
+          
+          # Wait for deployment to be ready
+          kubectl wait --for=condition=Available --timeout=300s deployment/mern-auth-app -n mern-app
+          
+          # Get deployment status
           kubectl get deployments,pods,svc -n mern-app -l app=mern-auth-app > documentation/screenshots/deployment-process/app-deployment.txt
+          
+          # Verify health endpoint
+          POD_NAME=$(kubectl get pods -n mern-app -l app=mern-auth-app -o jsonpath="{.items[0].metadata.name}")
+          kubectl wait --for=condition=Ready pod/$POD_NAME -n mern-app --timeout=300s
+          
+          # Forward port and check health
+          kubectl port-forward -n mern-app $POD_NAME 5000:5000 &
+          sleep 5
+          curl -s http://localhost:5000/api/health > documentation/screenshots/verification/health-check.txt || true
+          pkill -f "port-forward"
 
       - name: Capture Verification Status
         run: |

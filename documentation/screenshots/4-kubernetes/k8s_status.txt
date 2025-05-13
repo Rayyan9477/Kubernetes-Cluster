@@ -1,0 +1,14 @@
+Kubernetes Deployment Status
+==========================
+
+Namespaces:
+
+Pods:
+
+Services:
+
+Deployments:
+
+ConfigMaps:
+
+Secrets:

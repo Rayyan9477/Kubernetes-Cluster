@@ -1,10 +1,9 @@
-name: Build and Deploy to Kubernetes Cluster
+name: Build and Deploy to Minikube
 
 on:
   push:
     branches:
       - main
-      - master
   workflow_dispatch:
 
 env:
@@ -20,7 +19,7 @@ env:
 jobs:
   build-deploy:
     runs-on: self-hosted
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -45,13 +44,13 @@ jobs:
     - name: Build and push Docker image
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      uses: docker/build-push-action@v5
       with:
         context: ./app
         push: true
         tags: ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
         cache-from: type=registry,ref=${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:buildcache
         cache-to: type=registry,ref=${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+      uses: docker/build-push-action@v5
         
     - name: Create namespace if not exists
       run: |
@@ -165,21 +164,3 @@ jobs:
         minikube service mern-auth-service -n ${{ env.K8S_NAMESPACE }} --url >> documentation/verification/deployment-status.txt
         
         echo "Deployment status report generated at documentation/verification/deployment-status.txt"
-
-    - name: Capture screenshots for documentation
-      run: |
-        mkdir -p documentation/screenshots/$(date "+%Y-%m-%d")
-        
-        # Capture deployment status
-        echo "Capturing Kubernetes status info..."
-        kubectl get all -n ${{ env.K8S_NAMESPACE }} > documentation/screenshots/$(date "+%Y-%m-%d")/k8s-resources.txt
-        
-        # Capture application logs
-        echo "Capturing application logs..."
-        kubectl logs -l app=mern-auth-app -n ${{ env.K8S_NAMESPACE }} --tail=100 > documentation/screenshots/$(date "+%Y-%m-%d")/app-logs.txt
-        
-        # Capture MongoDB logs
-        echo "Capturing MongoDB logs..."
-        kubectl logs -l app=mongodb -n ${{ env.K8S_NAMESPACE }} --tail=100 > documentation/screenshots/$(date "+%Y-%m-%d")/mongodb-logs.txt
-        
-        echo "Documentation captured successfully!"

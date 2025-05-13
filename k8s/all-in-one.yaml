@@ -1,0 +1,223 @@
+# All Kubernetes resources in one file
+# Namespace Definition
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mern-app
+---
+# ConfigMap Definition
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mern-app-config
+  namespace: mern-app
+data:
+  NODE_ENV: "${NODE_ENV}"
+  PORT: "${PORT}"
+  FRONTEND_URL: "${FRONTEND_URL}"
+  VITE_BACKEND_URL: "${VITE_BACKEND_URL}"
+  MONGODB_DATABASE: "${MONGODB_DATABASE}"
+---
+# MongoDB Initialization Script ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-init-script
+  namespace: mern-app
+data:
+  init-mongo.js: |
+    // This script is run once when MongoDB is initialized
+    db = db.getSiblingDB('${MONGODB_DATABASE}');
+    
+    // Create a collection to ensure the database is initialized
+    db.createCollection('users');
+    
+    // Create indexes for performance
+    db.users.createIndex({ email: 1 }, { unique: true });
+    
+    // Log initialization
+    print('MongoDB database initialization completed');
+---
+# Secret Definition
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mern-app-secrets
+  namespace: mern-app
+stringData:
+  JWT_SECRET: "${JWT_SECRET}"
+  MONGODB_PASSWORD: "${MONGODB_PASSWORD}"
+  MONGODB_USERNAME: "${MONGODB_USERNAME}"
+  MONGO_URI: "mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb-service:27017/${MONGODB_DATABASE}?authSource=admin"
+---
+# MongoDB Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: mern-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:4.4
+        ports:
+        - containerPort: 27017
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mern-app-secrets
+              key: MONGODB_USERNAME
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mern-app-secrets
+              key: MONGODB_PASSWORD
+        - name: MONGO_INITDB_DATABASE
+          value: "mern-auth"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: mongodb-data
+          mountPath: /data/db
+        # Add MongoDB initialization script
+        - name: mongo-init
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: mongodb-data
+        emptyDir: {}
+      - name: mongo-init
+        configMap:
+          name: mongo-init-script
+---
+# MongoDB Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-service
+  namespace: mern-app
+spec:
+  selector:
+    app: mongodb
+  ports:
+    - port: 27017
+      targetPort: 27017
+  type: ClusterIP
+---
+# Application Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mern-auth-app
+  namespace: mern-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mern-auth-app
+  template:
+    metadata:
+      labels:
+        app: mern-auth-app
+    spec:
+      containers:
+      - name: mern-auth-app
+        image: ${DOCKER_USERNAME}/mern-auth-app:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: ${PORT}
+        env:
+        - name: MONGODB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mern-app-secrets
+              key: MONGODB_USERNAME
+        - name: MONGODB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mern-app-secrets
+              key: MONGODB_PASSWORD
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: mern-app-secrets
+              key: JWT_SECRET
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: mern-app-secrets
+              key: MONGO_URI
+        envFrom:
+        - configMapRef:
+            name: mern-app-config
+        startupProbe:
+          httpGet:
+            path: /api/health
+            port: ${PORT}
+          failureThreshold: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: ${PORT}
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: ${PORT}
+          periodSeconds: 10
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+---
+# Application Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mern-auth-service
+  namespace: mern-app
+spec:
+  type: NodePort
+  selector:
+    app: mern-auth-app
+  ports:
+    - port: 80
+      targetPort: ${PORT}
+      nodePort: 30007
+---
+# Network Policy to allow communication between app and MongoDB
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-app-to-mongodb
+  namespace: mern-app
+spec:
+  podSelector:
+    matchLabels:
+      app: mongodb
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: mern-auth-app
+    ports:
+    - protocol: TCP
+      port: 27017

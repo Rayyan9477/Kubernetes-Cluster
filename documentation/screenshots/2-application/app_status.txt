@@ -1,0 +1,14 @@
+Application Status
+=================
+
+Running Containers:
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+
+Docker Images:
+REPOSITORY                    TAG       IMAGE ID       CREATED         SIZE
+kubernetes-cluster-frontend   latest    45491fb5e2cc   2 hours ago     309MB
+kubernetes-cluster-backend    latest    abf2c910310d   2 hours ago     177MB
+kubernetes-cluster-app        latest    ce89ef0c68a6   2 hours ago     1.31GB
+rayyan9477/mern-auth-app      latest    723ae5a035ea   2 hours ago     1.31GB
+gcr.io/k8s-minikube/kicbase   v0.0.46   e72c4cbe9b29   3 months ago    1.31GB
+mongo                         4.4       d896c071ac69   14 months ago   427MB

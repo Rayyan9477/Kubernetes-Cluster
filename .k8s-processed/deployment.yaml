@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mern-auth-app
+  namespace: mern-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mern-auth-app
+  template:
+    metadata:
+      labels:
+        app: mern-auth-app
+    spec:
+      containers:
+      - name: mern-auth-app
+        image: your_docker_username/mern-auth-app:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        env:
+        - name: MONGODB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mern-app-secrets
+              key: MONGODB_USERNAME
+        - name: MONGODB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mern-app-secrets
+              key: MONGODB_PASSWORD
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: mern-app-secrets
+              key: JWT_SECRET
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: mern-app-secrets
+              key: MONGO_URI
+        envFrom:
+        - configMapRef:
+            name: mern-app-config
+        startupProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          failureThreshold: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          periodSeconds: 10
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+        envFrom:
+        - configMapRef:
+            name: mern-app-config
+        startupProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          failureThreshold: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          periodSeconds: 10
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+        envFrom:
+        - configMapRef:
+            name: mern-app-config
+        startupProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          failureThreshold: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 5
+          successThreshold: 1 # Corrected successThreshold
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

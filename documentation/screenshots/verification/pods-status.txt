@@ -1,0 +1,5 @@
+NAME                             READY   STATUS             RESTARTS        AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+mern-auth-app-5c8dfc47df-4ldpb   0/1     ImagePullBackOff   0               18h   10.244.0.15   minikube   <none>           <none>
+mern-auth-app-846f9747cf-8s6xw   0/1     InvalidImageName   0               18h   10.244.0.14   minikube   <none>           <none>
+mern-auth-app-ccf869c4b-jkqtc    0/1     Running            11 (13s ago)    18h   10.244.0.13   minikube   <none>           <none>
+mongodb-86c5795d97-pk774         1/1     Running            2 (3m32s ago)   18h   10.244.0.16   minikube   <none>           <none>

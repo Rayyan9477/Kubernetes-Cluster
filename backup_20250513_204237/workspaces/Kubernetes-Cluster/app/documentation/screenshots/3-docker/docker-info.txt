@@ -1,0 +1,7 @@
+Docker Status Information
+======================
+\nDocker Images:
+rayyan9477/mern-auth-app      latest    723ae5a035ea   3 minutes ago    1.31GB
+\nDocker Containers:
+2e3182efe785   mongo:4.4                "docker-entrypoint.s…"   17 seconds ago   Up 17 seconds   0.0.0.0:27017->27017/tcp, :::27017->27017/tcp   kubernetes-cluster-mongodb-1
+\nDockerfile Content:
